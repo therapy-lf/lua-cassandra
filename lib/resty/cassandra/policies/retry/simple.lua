@@ -36,7 +36,7 @@ function _M.new(max_retries)
 end
 
 function _M:on_unavailable(request)
-  return false
+  return request.retries < self.max_retries
 end
 
 function _M:on_read_timeout(request)
@@ -44,7 +44,7 @@ function _M:on_read_timeout(request)
 end
 
 function _M:on_write_timeout(request)
-  return request.retries < self.max_retries
+  return false
 end
 
 return _M
