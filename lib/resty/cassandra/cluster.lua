@@ -763,9 +763,9 @@ local function handle_error(self, err, cql_code, coordinator, request)
   return nil, err, cql_code
 end
 
-send_request = function(self, coordinator, request)
+send_request = function(self, coordinator, request, idempotent=true)
   local res, err, cql_code = coordinator:send(request)
-  if not res then
+  if not res and idempotent then
     return handle_error(self, err, cql_code, coordinator, request)
   elseif res.warnings and self.logging then
     -- protocol v4 can return warnings to the client
@@ -843,7 +843,7 @@ do
   -- @treturn table `res`: Table holding the query result if success, `nil` if failure.
   -- @treturn string `err`: String describing the error if failure.
   -- @treturn number `cql_err`: If a server-side error occurred, the CQL error code.
-  function _Cluster:execute(query, args, options, coordinator_options)
+  function _Cluster:execute(query, args, options, coordinator_options, idempotent=true)
     if not self.init then
       local ok, err = self:refresh()
       if not ok then return nil, 'could not refresh cluster: '..err end
@@ -865,7 +865,7 @@ do
       request = query_req(query, args, opts)
     end
 
-    return send_request(self, coordinator, request)
+    return send_request(self, coordinator, request, idempotent)
   end
 
   --- Execute a batch.
@@ -898,7 +898,7 @@ do
   -- @treturn table `res`: Table holding the query result if success, `nil` if failure.
   -- @treturn string `err`: String describing the error if failure.
   -- @treturn number `cql_err`: If a server-side error occurred, the CQL error code.
-  function _Cluster:batch(queries, options, coordinator_options)
+  function _Cluster:batch(queries, options, coordinator_options, idempotent=true)
     if not self.init then
       local ok, err = self:refresh()
       if not ok then return nil, 'could not refresh cluster: '..err end
@@ -919,7 +919,7 @@ do
       end
     end
 
-    return send_request(self, coordinator, batch_req(queries, opts))
+    return send_request(self, coordinator, batch_req(queries, opts), idempotent)
   end
 
   --- Lua iterator for auto-pagination.
